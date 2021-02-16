@@ -16,17 +16,20 @@ namespace FirstSampleConsoleMq.Publisher
                 Console.WriteLine("Connection Created on "+factory.Uri.AbsolutePath);
                 using (var channel=connection.CreateModel())
                 {
-                    Console.WriteLine("Channel Created");
-                    channel.QueueDeclare("queueFirst", false, false,false, null);
-                    Console.WriteLine("Queue Declared");
-                    string message = "Hello World";
+                    channel.QueueDeclare(queue: "hello",
+                                  durable: false,
+                                  exclusive: false,
+                                  autoDelete: false,
+                                  arguments: null);
 
-                    var bodyByte = Encoding.UTF8.GetBytes(message);
+                    string message = "Hello World!";
+                    var body = Encoding.UTF8.GetBytes(message);
 
-                    channel.BasicPublish("",routingKey:"queueFirst",basicProperties:null,body:bodyByte);
-                    Console.WriteLine("Message Sent...");
-
-
+                    channel.BasicPublish(exchange: "",
+                                         routingKey: "hello",
+                                         basicProperties: null,
+                                         body: body);
+                    Console.WriteLine(" [x] Sent {0}", message);
                 }
             }
 

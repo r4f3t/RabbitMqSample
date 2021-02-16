@@ -12,25 +12,30 @@ namespace FirstSampleConsoleMq.Consumer
             var factory = new ConnectionFactory();
             factory.Uri = new Uri("amqps://vrxiejxl:1VyAzgqMYgvVpOOz4ViA3EPKh7tD1S8G@barnacle.rmq.cloudamqp.com/vrxiejxl");
 
-            using (var connection = factory.CreateConnection())
+            var connection = factory.CreateConnection();
             {
                 Console.WriteLine("Connection Created on " + factory.Uri.AbsolutePath);
                 using (var channel = connection.CreateModel())
                 {
-                    Console.WriteLine("Channel Created");
-                    channel.QueueDeclare("queueFirst", false, false, false, null);
+                    channel.QueueDeclare(queue: "hello",
+                                 durable: false,
+                                 exclusive: false,
+                                 autoDelete: false,
+                                 arguments: null);
 
                     var consumer = new EventingBasicConsumer(channel);
-
-                    channel.BasicConsume("queueFirst", true, consumer);
-
-                    consumer.Received += (model, ea) => {
-                        var message = Encoding.UTF8.GetString(ea.Body.Span);
-
-                        Console.WriteLine("Okunan Değer : "+message);
+                    consumer.Received += (model, ea) =>
+                    {
+                        var body = ea.Body.ToArray();
+                        var message = Encoding.UTF8.GetString(body);
+                        Console.WriteLine(" [x] Received {0}", message);
                     };
+                    channel.BasicConsume(queue: "hello",
+                                         autoAck: true,
+                                         consumer: consumer);
 
-
+                    Console.WriteLine(" Press [enter] to exit.");
+                    Console.ReadLine();
                 }
             }
 
