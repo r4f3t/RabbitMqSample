@@ -18,27 +18,23 @@ namespace RabbitMqCore.Publisher
                 Console.WriteLine("Connection Created on " + factory.Uri.AbsolutePath);
                 using (var channel = connection.CreateModel())
                 {
-                    channel.QueueDeclare(queue: "queueFirst",
-                                  durable: true,
-                                  exclusive: false,
-                                  autoDelete: false,
-                                  arguments: null);
+                    channel.ExchangeDeclare("logs", ExchangeType.Fanout,durable:true);
 
                     for (int i = 0; i < int.Parse(GetMessageCount(args)); i++)
                     {
 
-                        string message = "MEssage "+i;
+                        string message = "MEssage " + i;
                         var body = Encoding.UTF8.GetBytes(message);
 
                         var properties = channel.CreateBasicProperties();
 
                         properties.Persistent = true;
 
-                        channel.BasicPublish(exchange: "",
-                                             routingKey: "queueFirst",
+                        channel.BasicPublish(exchange: "logs",
+                                             routingKey: "",
                                              basicProperties: properties,
                                              body: body);
-                        Console.WriteLine(" ["+i+"] Sent {0}", message);
+                        Console.WriteLine(" [" + i + "] Sent {0}", message);
 
                     }
 

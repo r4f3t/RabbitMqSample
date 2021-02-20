@@ -18,17 +18,17 @@ namespace RabbitMqCore.Consumer
                 Console.WriteLine("Connection Created on " + factory.Uri.AbsolutePath);
                 using (var channel = connection.CreateModel())
                 {
-                    channel.QueueDeclare(queue: "queueFirst",
-                                 durable: true,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
+                    channel.ExchangeDeclare("logs", ExchangeType.Fanout, durable: true);
 
-                    var consumer = new EventingBasicConsumer(channel);
+                    var queueName = channel.QueueDeclare().QueueName;
+
+                    channel.QueueBind(queueName, "logs", "");
+
+                   var consumer = new EventingBasicConsumer(channel);
 
                     channel.BasicQos(0, 1, false);
 
-                    channel.BasicConsume(queue: "queueFirst",
+                    channel.BasicConsume(queue: queueName,
                                        autoAck: false,
                                        consumer: consumer);
 
