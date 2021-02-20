@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -8,6 +9,14 @@ namespace RabbitMqCore.Consumer
 {
     class Program
     {
+        public enum ErrorType
+        {
+            Critical = 1,
+            Warning = 2,
+            Info = 3,
+            Error = 4
+        }
+
         static void Main(string[] args)
         {
             var factory = new ConnectionFactory();
@@ -18,13 +27,20 @@ namespace RabbitMqCore.Consumer
                 Console.WriteLine("Connection Created on " + factory.Uri.AbsolutePath);
                 using (var channel = connection.CreateModel())
                 {
-                    channel.ExchangeDeclare("logs", ExchangeType.Fanout, durable: true);
+                    channel.ExchangeDeclare("direct-exchange-logs", ExchangeType.Direct, durable: true);
 
                     var queueName = channel.QueueDeclare().QueueName;
 
-                    channel.QueueBind(queueName, "logs", "");
+                    var routingKeys = GetRoutingKeys(args);
 
-                   var consumer = new EventingBasicConsumer(channel);
+                    foreach (var item in routingKeys)
+                    {
+                        var expectingKey = ((ErrorType)int.Parse(item)).ToString();
+                        Console.WriteLine("Instance Expecting "+expectingKey);
+                        channel.QueueBind(queueName, "direct-exchange-logs",expectingKey);
+                    }
+
+                    var consumer = new EventingBasicConsumer(channel);
 
                     channel.BasicQos(0, 1, false);
 
@@ -53,6 +69,12 @@ namespace RabbitMqCore.Consumer
         private static string GetSleepTime(string[] args)
         {
             return args[0];
+        }
+
+        private static string[] GetRoutingKeys(string[] args)
+        {
+            var tempArray = args.Skip(1);
+            return tempArray.ToArray();
         }
     }
 }
