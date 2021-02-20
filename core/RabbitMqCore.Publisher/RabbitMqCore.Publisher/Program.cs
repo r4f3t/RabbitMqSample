@@ -9,6 +9,7 @@ namespace RabbitMqCore.Publisher
     {
         static void Main(string[] args)
         {
+
             var factory = new ConnectionFactory();
             factory.Uri = new Uri("amqps://vrxiejxl:1VyAzgqMYgvVpOOz4ViA3EPKh7tD1S8G@barnacle.rmq.cloudamqp.com/vrxiejxl");
 
@@ -17,21 +18,39 @@ namespace RabbitMqCore.Publisher
                 Console.WriteLine("Connection Created on " + factory.Uri.AbsolutePath);
                 using (var channel = connection.CreateModel())
                 {
-                    Console.WriteLine("Channel Created");
-                    channel.QueueDeclare("testQueue", false, false, false, null);
-                    Console.WriteLine("Queue Declared");
-                    string message = "Hello World";
+                    channel.QueueDeclare(queue: "queueFirst",
+                                  durable: true,
+                                  exclusive: false,
+                                  autoDelete: false,
+                                  arguments: null);
 
-                    var bodyByte = Encoding.UTF8.GetBytes(message);
+                    for (int i = 0; i < int.Parse(GetMessageCount(args)); i++)
+                    {
 
-                    channel.BasicPublish("", routingKey: "testQueue", basicProperties: null, body: bodyByte);
-                    Console.WriteLine("Message Sent...");
+                        string message = "MEssage "+i;
+                        var body = Encoding.UTF8.GetBytes(message);
 
+                        var properties = channel.CreateBasicProperties();
+
+                        properties.Persistent = true;
+
+                        channel.BasicPublish(exchange: "",
+                                             routingKey: "queueFirst",
+                                             basicProperties: properties,
+                                             body: body);
+                        Console.WriteLine(" ["+i+"] Sent {0}", message);
+
+                    }
 
                 }
             }
 
             Console.ReadLine();
+        }
+
+        private static string GetMessageCount(string[] args)
+        {
+            return args[0];
         }
     }
 }

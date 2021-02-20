@@ -2,6 +2,7 @@
 using RabbitMQ.Client.Events;
 using System;
 using System.Text;
+using System.Threading;
 
 namespace RabbitMqCore.Consumer
 {
@@ -14,28 +15,44 @@ namespace RabbitMqCore.Consumer
 
             var connection = factory.CreateConnection();
             {
-                //Console.WriteLine("Connection Created on " + factory.Uri.AbsolutePath);
+                Console.WriteLine("Connection Created on " + factory.Uri.AbsolutePath);
                 using (var channel = connection.CreateModel())
                 {
-                    Console.WriteLine("Channel Created");
-                    channel.QueueDeclare("testQueue", false, false, false, null);
+                    channel.QueueDeclare(queue: "queueFirst",
+                                 durable: true,
+                                 exclusive: false,
+                                 autoDelete: false,
+                                 arguments: null);
 
                     var consumer = new EventingBasicConsumer(channel);
 
-                    channel.BasicConsume("testQueue", false, consumer);
+                    channel.BasicQos(0, 1, false);
+
+                    channel.BasicConsume(queue: "queueFirst",
+                                       autoAck: false,
+                                       consumer: consumer);
 
                     consumer.Received += (model, ea) =>
                     {
-                        var message = Encoding.UTF8.GetString(ea.Body.Span);
-
-                        Console.WriteLine("Okunan Değer : " + message);
+                        Thread.Sleep(int.Parse(GetSleepTime(args)));
+                        var body = ea.Body.ToArray();
+                        var message = Encoding.UTF8.GetString(body);
+                        Console.WriteLine(" [x] Received {0}", message);
+                        channel.BasicAck(ea.DeliveryTag, false);
                     };
 
 
+                    Console.WriteLine(" Press [enter] to exit.");
+                    Console.ReadLine();
                 }
             }
 
             Console.ReadLine();
+        }
+
+        private static string GetSleepTime(string[] args)
+        {
+            return args[0];
         }
     }
 }
